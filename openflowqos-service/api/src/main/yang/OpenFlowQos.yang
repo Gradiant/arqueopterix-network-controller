@@ -1,0 +1,58 @@
+module OpenFlowQos {
+    yang-version 1;
+    namespace "urn:org:gradiant:arqueopterix:openflowqos";
+    prefix "OpenFlowQos";
+
+    import ietf-inet-types {prefix inet; revision-date "2013-07-15";}
+
+    revision "2018-01-03" {
+        description "Initial revision of OpenFlowQos model";
+    }
+
+    rpc set-qos-level {
+        input {
+        	leaf src-port {
+        		description "Flow source port.";
+        		type uint16;
+        	}
+
+        	leaf dst-port {
+        		description "Flow destination port.";
+        		type uint16;
+        	}
+
+            leaf src-addr {
+                description "Flow IPv4 source address.";
+                type inet:ipv4-prefix;
+            }
+
+            leaf dst-addr {
+                description "Flow IPv4 destination address.";
+                type inet:ipv4-prefix;
+    		}
+
+            leaf protocol {
+            	description "IANA transport level protocol identifier.";
+            	type uint16;
+            }
+
+            leaf service-level {
+            	description "QoS level to apply to the corresponding flow.";
+        		type uint16;
+            }
+
+            leaf additional-info {
+            	description "Q4S alert SDP descriptor.";
+            	type string;
+            }
+        }
+        output {
+        	leaf code {
+        		type uint8;
+        	}
+            leaf message {
+                type string;
+            }
+        }
+    }
+}
