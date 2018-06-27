@@ -2,7 +2,7 @@
 
 Arqueopterix OpenFlowQoS is an OpenDaylight bundle that provides a simplified API to allow other bundles or third party applications to manage the quality of service level that the underlying network provides to a specified network flow.
 
-<img src="/images/openflowqos_drawing.png" width="600">
+<img src="images/openflowqos_drawing.png" width="600">
 
 **Figure 1: Arqueopterix SDN controller architecture.**
 

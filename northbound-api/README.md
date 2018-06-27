@@ -2,7 +2,7 @@
 
 This repository contains an OpenDaylight Nitrogen SR3 bundle that implements the Northbound REST API provided by the SDN controller developed for the Arqueopterix project. The API was developed using Swagger and is accessible in the following link (https://app.swaggerhub.com/apis/cgiraldo/arqueopterix-policy_enforcement/0.1)
 
-<img src="/images/northboundapi_drawing.png" width="600">
+<img src="images/northboundapi_drawing.png" width="600">
 
 **Figure 1: Arqueopterix SDN controller architecture.**
 
