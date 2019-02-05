@@ -92,6 +92,21 @@ public class IidUtils {
 				.build();
 	}
 	
+	/**
+	 * Generate NodeConnector instance identifier
+	 * 
+	 * @param nodeId Node identifier for the corresponding node.
+	 * @param port Port number that NodeConnector refers to.
+	 * @return NodeConnector instance identifier
+	 */
+	public static InstanceIdentifier<NodeConnector> getNodeConnectorIid(String nodeId, String port){
+		InstanceIdentifier<Node> nodeInstanceIdentifier = getNodeIid(nodeId);
+		
+		return nodeInstanceIdentifier.builder()
+				.child(NodeConnector.class, new NodeConnectorKey(new NodeConnectorId(nodeId+":"+port)))
+				.build();
+	}
+	
 	public static InstanceIdentifier<Meter> getMeterIid() {
         InstanceIdentifier<Meter> meterInstanceIdentifier = InstanceIdentifier.create(Nodes.class)
         		.child(Node.class)

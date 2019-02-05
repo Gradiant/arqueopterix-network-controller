@@ -117,6 +117,36 @@ public class InitialConfigurator implements DataChangeListener {
 						short l2SwitchTable = 1;
 	                    
 	                	switch (strNodeId) {
+	                		case "openflow:8796749200715":
+	                		case "openflow:8796751961110":
+	                		case "openflow:8796763005145":
+	                		case "openflow:8796751298470":
+	                			LOG.error("Handling OVS nodes. test");
+	                			flowWriter.assignFlowToQueue(
+	                					strNodeId,
+	                					tableId,
+	                					null,
+	                					null,
+	                					LOW_PRIO_QUEUE,
+	                					(short)(tableId+1),
+	                					10
+	                			);
+	                			
+	                			flowWriter.outToPort(
+	                					strNodeId,
+	                					(short)(tableId+1), 
+	                					"1", 
+	                					"LOCAL",  
+	                					10);
+	                			
+	                			flowWriter.outToPort(
+	                					strNodeId,
+	                					(short)(tableId+1), 
+	                					"LOCAL", 
+	                					"1",  
+	                					10);
+	                			
+	                			break;
 	                		//Switch S1 Zodiac FX
 							case "openflow:123917682138460":
 							case "openflow:1":

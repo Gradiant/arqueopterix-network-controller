@@ -166,6 +166,42 @@ public class FlowWriter {
 	}
 	
 	/**
+	 * Creates a new flow in the specified node that matches the provided flow configuration,
+	 * assigns any packet of said flow to the provided queue ID and redirects the flow to the
+	 * specified table in the OpenFlow pipeline.
+	 * 
+	 * @param nodeId Node where the rule is installed
+	 * @param tableId Table id for the table where the rule will be installed
+	 * @param inPort Input port
+	 * @param outPort Output port
+	 * @param priority Rule priority
+	 */
+	public void outToPort(String nodeId, short tableId, String inPort, String outPort, int priority) {
+		Match match;
+		Action action;
+		Instruction instruction;
+		ArrayList<Action> actionList = new ArrayList<>();
+		ArrayList<Instruction> instructionList = new ArrayList<>();
+
+		// Create the corresponding match
+		match = FlowUtils.getFlowMatch(nodeId, inPort);
+		
+		// Create a Queue action and add it to the list
+		action = FlowUtils.getOutputAction(0, nodeId, outPort);
+		actionList.add(action);
+		
+		// Create an ApplyActions instruction and add it to the list
+		instruction = FlowUtils.getApplyActionsInstruction(0, actionList);
+		instructionList.add(instruction);
+
+		// Generate the desired flow
+		Flow flow = FlowUtils.createFlow(tableId, match, instructionList, priority);
+		
+		// Write flow to the configuration database
+		FlowUtils.writeFlow(salFlowService, nodeId, tableId, flow);
+	}
+	
+	/**
 	 * Write table miss rule to the specified node. Table miss rule matches every packet
 	 * and executes a go to table action.
 	 * 

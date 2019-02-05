@@ -288,11 +288,11 @@ public class FlowUtils {
 	 * @param inPort Port identifier
 	 * @return Match object
 	 */
-	public static Match getFlowMatch(String nodeId, long inPort) {	
+	public static Match getFlowMatch(String nodeId, String inPort) {	
 		// Create matchbuilder
 		MatchBuilder matchBuilder = new MatchBuilder();
 		
-		String portId = String.format("%s:%d", nodeId, inPort);
+		String portId = String.format("%s:%s", nodeId, inPort);
 		
 		// Create in port match and add it to builder
 		matchBuilder.setInPort(new NodeConnectorId(portId));
@@ -384,6 +384,31 @@ public class FlowUtils {
 	 */
 	public static Action getOutputAction(int order, String nodeId, long outPort) {
 		InstanceIdentifier<NodeConnector> nodeConnectorInstanceId = IidUtils.getNodeConnectorIid(nodeId,(short)outPort);
+		NodeConnectorRef nodeConnectorRef = new NodeConnectorRef(nodeConnectorInstanceId);
+		Uri outPortUri = nodeConnectorRef.getValue().firstKeyOf(NodeConnector.class, NodeConnectorKey.class).getId();
+		
+		Action outputAction = new ActionBuilder() //
+				.setOrder(order).setAction(new OutputActionCaseBuilder() //
+						.setOutputAction(new OutputActionBuilder() //
+								.setMaxLength(0xffff) //
+								.setOutputNodeConnector(outPortUri) //
+								.build()) //
+						.build()) //
+				.build();
+		
+		return outputAction;
+	}
+	
+	/**
+	 * Send packets to specific output port. Port ID is built as nodeId:outPort
+	 * 
+	 * @param order Action order in the list
+	 * @param nodeId Node identifier
+	 * @param outPort Output port number
+	 * @return Action object
+	 */
+	public static Action getOutputAction(int order, String nodeId, String outPort) {
+		InstanceIdentifier<NodeConnector> nodeConnectorInstanceId = IidUtils.getNodeConnectorIid(nodeId,outPort);
 		NodeConnectorRef nodeConnectorRef = new NodeConnectorRef(nodeConnectorInstanceId);
 		Uri outPortUri = nodeConnectorRef.getValue().firstKeyOf(NodeConnector.class, NodeConnectorKey.class).getId();
 		

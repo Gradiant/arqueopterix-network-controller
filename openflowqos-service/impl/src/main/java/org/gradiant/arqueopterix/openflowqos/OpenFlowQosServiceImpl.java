@@ -10,6 +10,8 @@ package org.gradiant.arqueopterix.openflowqos;
 import java.util.concurrent.Future;
 
 import org.gradiant.arqueopterix.flowwriter.FlowWriter;
+import org.gradiant.arqueopterix.tcmanager.TcManager;
+import org.gradiant.arqueopterix.tcmanager.TcPolicy;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.Ipv4Prefix;
 import org.opendaylight.yang.gen.v1.urn.org.gradiant.arqueopterix.openflowqos.rev180103.OpenFlowQosService;
 import org.opendaylight.yang.gen.v1.urn.org.gradiant.arqueopterix.openflowqos.rev180103.SetQosLevelInput;
@@ -17,6 +19,8 @@ import org.opendaylight.yang.gen.v1.urn.org.gradiant.arqueopterix.openflowqos.re
 import org.opendaylight.yang.gen.v1.urn.org.gradiant.arqueopterix.openflowqos.rev180103.SetQosLevelOutputBuilder;
 import org.opendaylight.yangtools.yang.common.RpcResult;
 import org.opendaylight.yangtools.yang.common.RpcResultBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Implementation of the OpenFlowQosService defined in Yang model.
@@ -25,6 +29,9 @@ import org.opendaylight.yangtools.yang.common.RpcResultBuilder;
  */
 public class OpenFlowQosServiceImpl implements OpenFlowQosService {
     private FlowWriter flowWriter;
+    private TcManager tcManager;
+    
+    private static final Logger LOG = LoggerFactory.getLogger(OpenFlowQosServiceImpl.class);
     
     private final long PORT1_LO_UP_METER_ID = 1;
     private final long PORT1_HI_UP_METER_ID = 2;
@@ -34,9 +41,29 @@ public class OpenFlowQosServiceImpl implements OpenFlowQosService {
     private final long PORT2_HI_UP_METER_ID = 5;
     private final long PORT2_LO_DOWN_METER_ID = 7;
     private final long PORT2_HI_DOWN_METER_ID = 8;
+    
+    private String ifaceA;
+    private String ifaceB;
 
     public OpenFlowQosServiceImpl(FlowWriter flowWriter) {
         this.flowWriter = flowWriter;
+        
+    	this.tcManager = new TcManager("http://127.0.0.1:5000");
+    	
+    	if (System.getenv("ARQ_IFACE_A") != null) {
+    		this.ifaceA = System.getenv("ARQ_IFACE_A");
+    	} else {
+    		this.ifaceA = "enp0s3";
+    	}
+    	
+    	if (System.getenv("ARQ_IFACE_B") != null) {
+    		this.ifaceB = System.getenv("ARQ_IFACE_B");
+    	} else {
+    		this.ifaceB = "enp0s8";
+    	}
+    	
+    	tcManager.setDefaultRate(this.ifaceA, 5);
+    	tcManager.setDefaultRate(this.ifaceB, 5);
     }
 
     /**
@@ -51,9 +78,10 @@ public class OpenFlowQosServiceImpl implements OpenFlowQosService {
         SetQosLevelOutputBuilder setQosOutputBuilder = new SetQosLevelOutputBuilder();
         setQosOutputBuilder.setCode((short)10);
         setQosOutputBuilder.setMessage("Fine");
+        
+        LOG.error("Received new QoS request");
 
         if (input.getServiceLevel() == 0) {
-        	System.out.println(input.toString());
         	setLoBandwidth(input);
         	setLoPriority(input);
         } else if (input.getServiceLevel() == 1) {
@@ -94,82 +122,25 @@ public class OpenFlowQosServiceImpl implements OpenFlowQosService {
      * @param input Input containing policy information
      */
     private void setBandwidth(int value, SetQosLevelInput input) {
-    	long meter = 0;
-    	long outPort = 0;    	
+    	int bw = 5;    	
     	String nodeId;
     	
-    	// Dedide what network devices are implied based on origin and destination IP addresses
-    	if (input.getSrcAddr().getValue().equals("192.168.0.61/32") || 
-    			input.getDstAddr().getValue().equals("192.168.0.61/32") ||
-    			input.getSrcAddr().getValue().equals("192.168.0.62/32") || 
-    			input.getDstAddr().getValue().equals("192.168.0.62/32")) {
-    		nodeId = "openflow:123917682138460";
-    	} else if (input.getSrcAddr().getValue().equals("192.168.0.63/32") || 
-    			input.getDstAddr().getValue().equals("192.168.0.63/32") ||
-    			input.getSrcAddr().getValue().equals("192.168.0.64/32") || 
-    			input.getDstAddr().getValue().equals("192.168.0.64/32")) {
-    		nodeId = "openflow:123917682138471"; 
+    	// Decide what network devices are implied based on origin and destination IP addresses
+    	if (input.getSrcAddr().getValue().startsWith("192.168.2.")) {
+    		nodeId = this.ifaceB;
+    	} else if (input.getSrcAddr().getValue().startsWith("192.168.1.")) {
+    		nodeId = this.ifaceA; 
     	} else {
     		return;
     	}
     	
-    	// Decide output port and meter based on origin and desination IP addresses and demanded bw
-    	if (input.getSrcAddr().getValue().equals("192.168.0.61/32") ||
-    			input.getSrcAddr().getValue().equals("192.168.0.63/32")) {
-    		if (value == 0) {
-    			meter = PORT1_LO_UP_METER_ID;
-    		} else {
-    			meter = PORT1_HI_UP_METER_ID;
-    		}
-    		
-    		outPort = 3;
+    	if (value == 1 || value == 2) {
+    		bw = 10;
+    	} else {
+    		bw = 5;
     	}
     	
-    	if (input.getSrcAddr().getValue().equals("192.168.0.62/32") ||
-    			input.getSrcAddr().getValue().equals("192.168.0.64/32")) {
-    		if (value == 0) {
-    			meter = PORT2_LO_UP_METER_ID;
-    		} else {
-    			meter = PORT2_HI_UP_METER_ID;
-    		}
-    		
-    		outPort = 3;
-    	}
-    	
-    	if (input.getDstAddr().getValue().equals("192.168.0.61/32") ||
-    			input.getDstAddr().getValue().equals("192.168.0.63/32")) {
-    		if (value == 0) {
-    			meter = PORT1_LO_DOWN_METER_ID;
-    		} else {
-    			meter = PORT1_HI_DOWN_METER_ID;
-    		}
-    		
-    		outPort = 1;
-    	}
-    	
-    	if (input.getDstAddr().getValue().equals("192.168.0.62/32") ||
-    			input.getDstAddr().getValue().equals("192.168.0.64/32")) {
-    		if (value == 0) {
-    			meter = PORT2_LO_DOWN_METER_ID;
-    		} else {
-    			meter = PORT2_HI_DOWN_METER_ID;
-    		}
-    		
-    		outPort = 2;
-    	}
-
-    		
-        // Commit rule to the Configuration datastore
-        flowWriter.setMeter(
-        		nodeId,
-        		(short)0,
-        		input.getSrcAddr(),
-        		input.getDstAddr(),
-        		meter,
-        		(short)1,
-        		20,
-        		outPort
-        );
+    	tcManager.setPolicy(nodeId, input.getSrcAddr(), input.getDstAddr(), bw);
     }
     
     /**
@@ -208,7 +179,23 @@ public class OpenFlowQosServiceImpl implements OpenFlowQosService {
     	}
     	
     	// Priority is only applied in core switch so it is directly hardcoded
-    	strNodeId = "openflow:272792296473262";
+    	//strNodeId = "openflow:8796763005145";
+    	strNodeId = "openflow:8796751961110";
+    	
+    	
+    	// Commit rule to the configuration datastore
+		flowWriter.assignFlowToQueue(
+				strNodeId,
+				(short)0,
+				input.getSrcAddr(),
+				input.getDstAddr(),
+				queueId,
+				(short)1,
+				20);
+		
+    	// Priority is only applied in core switch so it is directly hardcoded
+    	//strNodeId = "openflow:8796751298470";
+		strNodeId = "openflow:8796749200715";
     	
     	// Commit rule to the configuration datastore
 		flowWriter.assignFlowToQueue(

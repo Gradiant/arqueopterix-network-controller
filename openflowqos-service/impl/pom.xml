@@ -79,5 +79,15 @@ and is available at http://www.eclipse.org/legal/epl-v10.html
       <artifactId>mockito-core</artifactId>
       <scope>test</scope>
     </dependency>
+    
+    <dependency>
+      <groupId>com.sun.jersey</groupId>
+      <artifactId>jersey-client</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.google.code.gson</groupId>
+      <artifactId>gson</artifactId>
+    </dependency>
+    
   </dependencies>
 </project>
